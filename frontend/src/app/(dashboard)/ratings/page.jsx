@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import RestaurantCard from '@/components/RestaurantCard';
+import RestaurantCard from '@/components/PastOrderCard';
 import restaurantData from '@/data/restaurants.json';
+import PastOrderCard from "@/components/PastOrderCard";
 
-/* ========= Premium Animation Setup ========= */
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -64,7 +64,7 @@ export default function RatingsPage() {
       >
         {sortedRestaurants.map((restaurant) => (
           <motion.div key={restaurant.id} variants={fadeUp}>
-            <RestaurantCard restaurant={restaurant} />
+            <PastOrderCard order={restaurant} />
           </motion.div>
         ))}
       </motion.div>
