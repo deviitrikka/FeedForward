@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Select,
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Image from "next/image";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -59,50 +60,84 @@ const stagger = {
 export default function RequestFoodPage() {
   const router = useRouter();
 
-  const [members, setMembers] = useState('');
-  const [preference, setPreference] = useState('veg');
-  const [buttonState, setButtonState] = useState('idle');
+  const [members, setMembers] = useState("");
+  const [preference, setPreference] = useState("veg");
+  const [buttonState, setButtonState] = useState("idle");
 
-  const handleSubmit = (e) => {
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!members) return;
 
-    if (buttonState === 'ready') {
-      router.push('/my-orders');
+    // If ready → navigate
+    if (buttonState === "ready") {
+      router.push("/my-orders");
       return;
     }
 
-    setButtonState('searching');
+    try {
+      setButtonState("searching");
+      await delay(2000);
 
-    setTimeout(() => {
-      setButtonState('accepted');
+      setButtonState("accepted");
+      await delay(2000);
+      
+      const response = await fetch(
+        "http://localhost:8001/api/request-food",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            members: parseInt(members),
+            preference: preference,
+          }),
+        }
+      );
 
-      setTimeout(() => {
-        setButtonState('ready');
-      }, 2000);
+      if (!response.ok) {
+        throw new Error("Failed to fetch order");
+      }
 
-    }, 2000);
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      // Store response for My Orders page
+      localStorage.setItem("orderData", JSON.stringify(data));
+
+      setButtonState("ready");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Something went wrong. Please try again.");
+      setButtonState("idle");
+    }
   };
 
   const getButtonText = () => {
     switch (buttonState) {
-      case 'searching': return 'Looking for Food...';
-      case 'accepted': return 'Request Accepted!';
-      case 'ready': return 'Click me to go to My Orders';
-      default: return 'Submit Request';
+      case "searching":
+        return "Looking for Food...";
+      case "accepted":
+        return "Request Accepted!";
+      case "ready":
+        return "Click me to go to My Orders";
+      default:
+        return "Submit Request";
     }
   };
 
   const getButtonStyles = () => {
     switch (buttonState) {
-      case 'searching':
-        return 'bg-neutral-400 text-white cursor-not-allowed';
-      case 'accepted':
-        return 'bg-[#a1b542] text-white cursor-not-allowed';
-      case 'ready':
-        return 'bg-[#677aa4] text-white hover:bg-[#677aa4] shadow-md';
+      case "searching":
+        return "bg-neutral-400 text-white cursor-not-allowed";
+      case "accepted":
+        return "bg-[#a1b542] text-white cursor-not-allowed";
+      case "ready":
+        return "bg-[#677aa4] text-white hover:bg-[#677aa4] shadow-md";
       default:
-        return 'bg-neutral-900 text-white hover:bg-neutral-800 shadow-md';
+        return "bg-neutral-900 text-white hover:bg-neutral-800 shadow-md";
     }
   };
 
@@ -113,16 +148,14 @@ export default function RequestFoodPage() {
       variants={stagger}
       className="max-w-4xl mx-auto mt-10"
     >
-
       <div className="rounded-2xl overflow-hidden flex flex-col md:flex-row">
-
         {/* Mascot Section */}
         <motion.div
           variants={fadeLeft}
           className="p-8 mr-4 flex flex-col items-center justify-center md:w-2/5"
         >
           <div className="w-full h-full rounded-full flex items-center justify-center mb-6">
-            <img src="/mascot.png" alt="Mascot" />
+            <Image src="/mascot.png" width={500} height={500} alt="Mascot" />
           </div>
 
           <h2 className="text-2xl font-bold text-background font-lato text-center">
@@ -135,10 +168,7 @@ export default function RequestFoodPage() {
         </motion.div>
 
         {/* Form Section */}
-        <motion.div
-          variants={fadeRight}
-          className="p-8 md:w-3/5"
-        >
+        <motion.div variants={fadeRight} className="p-8 md:w-3/5">
           <motion.h1
             variants={fadeUp}
             className="text-3xl font-semibold text-neutral-900 mb-6 font-lato tracking-tight"
@@ -151,7 +181,6 @@ export default function RequestFoodPage() {
             variants={stagger}
             className="space-y-6"
           >
-
             {/* Members */}
             <motion.div variants={fadeUp}>
               <label className="block text-sm font-medium text-black mb-2 font-lato">
@@ -161,20 +190,20 @@ export default function RequestFoodPage() {
               <Select
                 value={members}
                 onValueChange={setMembers}
-                disabled={buttonState !== 'idle'}
+                disabled={buttonState !== "idle"}
               >
                 <SelectTrigger className="w-full px-4 py-6 rounded-lg border border-neutral-300 bg-white text-black font-lato outline-none transition-colors">
                   <SelectValue placeholder="Select number of members" />
                 </SelectTrigger>
 
-                <SelectContent position='popper'>
+                <SelectContent position="popper">
                   {[1, 2, 3, 4, 5].map((num) => (
                     <SelectItem
                       key={num}
                       value={num.toString()}
                       className="font-lato cursor-pointer"
                     >
-                      {num} {num === 1 ? 'Member' : 'Members'}
+                      {num} {num === 1 ? "Member" : "Members"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -190,17 +219,20 @@ export default function RequestFoodPage() {
               <Select
                 value={preference}
                 onValueChange={setPreference}
-                disabled={buttonState !== 'idle'}
+                disabled={buttonState !== "idle"}
               >
                 <SelectTrigger className="w-full px-4 py-6 rounded-lg border border-neutral-300 bg-white text-black font-lato outline-none transition-colors">
                   <SelectValue placeholder="Select preference" />
                 </SelectTrigger>
 
-                <SelectContent position='popper'>
+                <SelectContent position="popper">
                   <SelectItem value="veg" className="font-lato cursor-pointer">
                     Vegetarian
                   </SelectItem>
-                  <SelectItem value="non-veg" className="font-lato cursor-pointer">
+                  <SelectItem
+                    value="non-veg"
+                    className="font-lato cursor-pointer"
+                  >
                     Non-Vegetarian
                   </SelectItem>
                 </SelectContent>
@@ -211,12 +243,14 @@ export default function RequestFoodPage() {
             <motion.button
               variants={fadeUp}
               type="submit"
-              disabled={buttonState === 'searching' || buttonState === 'accepted'}
+              disabled={
+                buttonState === "searching" ||
+                buttonState === "accepted"
+              }
               className={`w-full py-4 rounded-lg text-lg transition-all duration-300 font-lato tracking-tight mt-16 ${getButtonStyles()}`}
             >
               {getButtonText()}
             </motion.button>
-
           </motion.form>
         </motion.div>
       </div>
